@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epoch | A Historical Pinpoint Game</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-red: #f87171;
+            --panel-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--panel-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        button {
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #7dd3fc;
+        }
+        
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent-blue);
+            border: 2px solid var(--accent-blue);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Setup Screen */
+        .setup-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .setup-group h3 {
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Game Screen */
+        #health-container {
+            margin-bottom: 2rem;
+        }
+        
+        #health-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        #health-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: #334155;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #health-bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            width: 100%;
+            transition: width 0.4s ease, background-color 0.4s ease;
+        }
+
+        #event-display {
+            font-size: 1.5rem;
+            line-height: 1.4;
+            margin-bottom: 2rem;
+            min-height: 80px;
+        }
+
+        /* Slider Area */
+        .slider-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .fine-tune-btn {
+            background: #334155;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            margin-top: -10px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        #current-guess-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin: 1.5rem 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Result Area */
+        #result-area {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #0f172a;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .result-math {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .bullseye { color: var(--accent-blue); font-weight: bold; }
+        .damage { color: var(--accent-red); font-weight: bold; }
+
+        /* Shake Animation */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake { animation: shake 0.4s; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- SCREEN 1: SETUP -->
+        <div id="setup-screen">
+            <h1>Epoch</h1>
+            <p class="subtitle">Pinpoint history. Don't run out of time.</p>
+
+            <div class="setup-group">
+                <h3>Select Era</h3>
+                <button class="era-btn btn-outline" data-era="world" id="btn-world" style="background: rgba(56, 189, 248, 0.1);">World History</button>
+                <button class="era-btn btn-outline" data-era="american" id="btn-american">American History</button>
+            </div>
+
+            <div class="setup-group">
+                <h3>Select Difficulty</h3>
+                <button class="diff-btn btn-outline" data-health="250" id="btn-easy">Easy (250 Yrs)</button>
+                <button class="diff-btn btn-outline" data-health="100" id="btn-normal" style="background: rgba(56, 189, 248, 0.1);">Normal (100 Yrs)</button>
+                <button class="diff-btn btn-outline" data-health="50" id="btn-hard">Hard (50 Yrs)</button>
+            </div>
+
+            <button id="start-game-btn" style="width: 100%; margin-top: 1rem; padding: 15px;">START GAME</button>
+        </div>
+
+        <!-- SCREEN 2: GAMEPLAY -->
+        <div id="game-screen" class="hidden">
+            <div id="health-container">
+                <div id="health-text">Years Remaining: <span id="health-value">100</span> | Score: <span id="score-value">0</span></div>
+                <div id="health-bar-bg">
+                    <div id="health-bar-fill"></div>
+                </div>
+            </div>
+
+            <div id="event-display">Event text goes here...</div>
+
+            <div id="guessing-area">
+                <div id="current-guess-display">1950 CE</div>
+                
+                <div class="slider-controls">
+                    <button class="fine-tune-btn" id="btn-minus">-</button>
+                    <input type="range" id="year-slider" min="1000" max="2024" step="1">
+                    <button class="fine-tune-btn" id="btn-plus">+</button>
+                </div>
+                
+                <button id="lock-in-btn" style="width: 100%; margin-top: 1rem;">Lock In Guess</button>
+            </div>
+
+            <div id="result-area" class="hidden">
+                <div id="result-text" class="result-math">You guessed X. The answer was Y.</div>
+                <div id="result-fact" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;"></div>
+                <button id="next-event-btn" style="width: 100%;">Next Event</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: GAME OVER -->
+        <div id="game-over-screen" class="hidden">
+            <h1 style="color: var(--accent-red);">Out of Time</h1>
+            <p id="final-score" style="font-size: 1.5rem; margin: 1rem 0;">You successfully pinpointed X events.</p>
+            <p id="fatal-event" style="color: var(--text-muted); margin-bottom: 2rem;">The event that ended it all: ...</p>
+            <button id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATASETS ---
+        const americanHistoryEvents = [
+            { year: 1492, event: "Christopher Columbus makes landfall in the Americas." },
+            { year: 1607, event: "The Jamestown settlement is established in Virginia." },
+            { year: 1620, event: "The Mayflower Compact is signed by Pilgrims." },
+            { year: 1776, event: "The Declaration of Independence is adopted." },
+            { year: 1787, event: "The United States Constitution is drafted and signed." },
+            { year: 1803, event: "The US doubles its size via the Louisiana Purchase." },
+            { year: 1812, event: "The US declares war on Great Britain over maritime rights." },
+            { year: 1849, event: "The California Gold Rush begins in earnest." },
+            { year: 1861, event: "Confederate forces fire on Fort Sumter, beginning the Civil War." },
+            { year: 1865, event: "Robert E. Lee surrenders at Appomattox Court House." },
+            { year: 1869, event: "The First Transcontinental Railroad is completed." },
+            { year: 1903, event: "The Wright brothers achieve the first powered airplane flight." },
+            { year: 1917, event: "The United States enters World War I." },
+            { year: 1920, event: "The 19th Amendment grants women the right to vote." },
+            { year: 1929, event: "A massive stock market crash triggers the Great Depression." },
+            { year: 1941, event: "Japanese forces attack the naval base at Pearl Harbor." },
+            { year: 1945, event: "The US drops atomic bombs on Hiroshima and Nagasaki." },
+            { year: 1954, event: "The Supreme Court strikes down school segregation in Brown v. Board." },
+            { year: 1964, event: "President Lyndon B. Johnson signs the Civil Rights Act." },
+            { year: 1969, event: "Apollo 11 astronauts become the first humans to walk on the moon." },
+            { year: 1974, event: "Richard Nixon resigns due to the Watergate scandal." },
+            { year: 2001, event: "Terrorists crash hijacked planes into the Twin Towers and Pentagon." },
+            { year: 2008, event: "A subprime mortgage crisis triggers the Great Recession." }
+        ];
+
+        const worldHistoryEvents = [
+            { year: -3200, event: "The invention of writing (Cuneiform) in Sumer." },
+            { year: -2560, event: "The Great Pyramid of Giza is completed." },
+            { year: -1200, event: "The Late Bronze Age Collapse triggers widespread societal fall." },
+            { year: -776, event: "The first recorded Olympic Games are held in Greece." },
+            { year: -44, event: "Julius Caesar is assassinated on the Ides of March." },
+            { year: 79, event: "Mount Vesuvius erupts, burying Pompeii." },
+            { year: 476, event: "The traditional fall of the Western Roman Empire." },
+            { year: 1066, event: "William the Conqueror wins the Battle of Hastings." },
+            { year: 1215, event: "King John of England is forced to sign the Magna Carta." },
+            { year: 1347, event: "The Black Death arrives in Europe." },
+            { year: 1453, event: "The Ottoman Empire captures Constantinople, ending the Byzantine Empire." },
+            { year: 1492, event: "Christopher Columbus reaches the Americas." },
+            { year: 1517, event: "Martin Luther publishes his 95 Theses, igniting the Reformation." },
+            { year: 1789, event: "The storming of the Bastille ignites the French Revolution." },
+            { year: 1815, event: "Napoleon is defeated for the final time at the Battle of Waterloo." },
+            { year: 1848, event: "Karl Marx and Friedrich Engels publish The Communist Manifesto." },
+            { year: 1859, event: "Charles Darwin publishes 'On the Origin of Species'." },
+            { year: 1914, event: "The assassination of Archduke Franz Ferdinand triggers World War I." },
+            { year: 1928, event: "Alexander Fleming discovers the first antibiotic, penicillin." },
+            { year: 1939, event: "Germany invades Poland, officially starting World War II." },
+            { year: 1969, event: "Apollo 11 astronauts successfully land on the Moon." },
+            { year: 1989, event: "The Berlin Wall falls as mass protests sweep across Eastern Europe." },
+            { year: 1991, event: "The Soviet Union officially dissolves into 15 independent republics." },
+            { year: 2020, event: "The World Health Organization declares COVID-19 a global pandemic." }
+        ];
+
+        // --- GAME STATE ---
+        let currentEra = 'world'; // 'world' or 'american'
+        let startingHealth = 100;
+        let health = 100;
+        let score = 0;
+        let currentEvent = null;
+        let availableEvents = [];
+        const MAX_PENALTY = 40;
+        const CURRENT_YEAR = new Date().getFullYear();
+
+        // --- DOM ELEMENTS ---
+        const screens = {
+            setup: document.getElementById('setup-screen'),
+            game: document.getElementById('game-screen'),
+            over: document.getElementById('game-over-screen')
+        };
+        const slider = document.getElementById('year-slider');
+        const guessDisplay = document.getElementById('current-guess-display');
+        const healthValue = document.getElementById('health-value');
+        const healthBarFill = document.getElementById('health-bar-fill');
+        const scoreValue = document.getElementById('score-value');
+        const resultArea = document.getElementById('result-area');
+        const guessingArea = document.getElementById('guessing-area');
+
+        // --- SETUP LOGIC ---
+        document.querySelectorAll('.era-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.era-btn').forEach(b => b.style.background = 'transparent');
+                e.target.style.background = 'rgba(56, 189, 248, 0.1)';
+                currentEra = e.target.dataset.era;
+            });
+        });
+
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.style.background = 'transparent');
+                e.target.style.background = 'rgba(56, 189, 248, 0.1)';
+                startingHealth = parseInt(e.target.dataset.health);
+            });
+        });
+
+        document.getElementById('start-game-btn').addEventListener('click', initGame);
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            screens.over.classList.add('hidden');
+            screens.setup.classList.remove('hidden');
+        });
+
+        // --- CORE LOOP ---
+        function initGame() {
+            health = startingHealth;
+            score = 0;
+            availableEvents = [...(currentEra === 'american' ? americanHistoryEvents : worldHistoryEvents)];
+            
+            // Shuffle
+            availableEvents.sort(() => Math.random() - 0.5);
+
+            updateHealthUI();
+            scoreValue.innerText = score;
+            
+            screens.setup.classList.add('hidden');
+            screens.game.classList.remove('hidden');
+            
+            loadNextEvent();
+        }
+
+        function loadNextEvent() {
+            if (availableEvents.length === 0) {
+                // Reseed if they somehow get through all of them
+                availableEvents = [...(currentEra === 'american' ? americanHistoryEvents : worldHistoryEvents)];
+            }
+            
+            currentEvent = availableEvents.pop();
+            document.getElementById('event-display').innerText = currentEvent.event;
+            
+            // Dynamic Slider Range (Window of ~400 years)
+            let minYear = currentEvent.year - 200;
+            let maxYear = currentEvent.year + 200;
+            
+            // Clamp to reality
+            if (maxYear > CURRENT_YEAR) maxYear = CURRENT_YEAR;
+            if (minYear > CURRENT_YEAR - 50) minYear = CURRENT_YEAR - 400; // ensure gap
+
+            slider.min = minYear;
+            slider.max = maxYear;
+            slider.value = Math.floor((minYear + maxYear) / 2); // Start in middle
+
+            updateSliderDisplay();
+            
+            guessingArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+        }
+
+        // --- SLIDER LOGIC ---
+        function formatYear(year) {
+            if (currentEra === 'american') {
+                return Math.abs(year); // No BCE/CE needed for American mode
+            }
+            return year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
+        }
+
+        function updateSliderDisplay() {
+            guessDisplay.innerText = formatYear(slider.value);
+        }
+
+        slider.addEventListener('input', updateSliderDisplay);
+        
+        document.getElementById('btn-minus').addEventListener('click', () => {
+            slider.value = parseInt(slider.value) - 1;
+            updateSliderDisplay();
+        });
+        
+        document.getElementById('btn-plus').addEventListener('click', () => {
+            slider.value = parseInt(slider.value) + 1;
+            updateSliderDisplay();
+        });
+
+        // --- GUESS LOGIC ---
+        document.getElementById('lock-in-btn').addEventListener('click', () => {
+            const guess = parseInt(slider.value);
+            const actual = currentEvent.year;
+            const diff = Math.abs(guess - actual);
+            
+            let penalty = diff;
+            let message = "";
+            let isBullseye = false;
+
+            if (diff === 0) {
+                isBullseye = true;
+                health += 10;
+                if (health > startingHealth) health = startingHealth; // Cap at max
+                message = `<span class="bullseye">🎯 BULLSEYE!</span> Spot on. You regained 10 years!`;
+            } else {
+                if (penalty > MAX_PENALTY) {
+                    penalty = MAX_PENALTY;
+                    message = `You guessed ${formatYear(guess)}. The answer was <strong>${formatYear(actual)}</strong>.<br>You missed by ${diff} years, but the penalty is capped at <span class="damage">-${MAX_PENALTY} years</span>.`;
+                } else {
+                    message = `You guessed ${formatYear(guess)}. The answer was <strong>${formatYear(actual)}</strong>.<br>You lost <span class="damage">${penalty} years</span>.`;
+                }
+                health -= penalty;
+            }
+
+            // Visual Feedback
+            document.getElementById('result-text').innerHTML = message;
+            guessingArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            
+            if (!isBullseye && penalty > 0) {
+                document.getElementById('game-container').classList.add('shake');
+                setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
+            }
+
+            updateHealthUI();
+
+            if (health <= 0) {
+                document.getElementById('next-event-btn').innerText = "View Final Score";
+            } else {
+                document.getElementById('next-event-btn').innerText = "Next Event";
+                score++;
+                scoreValue.innerText = score;
+            }
+        });
+
+        document.getElementById('next-event-btn').addEventListener('click', () => {
+            if (health <= 0) {
+                gameOver();
+            } else {
+                loadNextEvent();
+            }
+        });
+
+        function updateHealthUI() {
+            healthValue.innerText = Math.max(0, health);
+            const pct = Math.max(0, (health / startingHealth) * 100);
+            healthBarFill.style.width = `${pct}%`;
+            
+            if (pct > 50) healthBarFill.style.background = 'var(--accent-green)';
+            else if (pct > 20) healthBarFill.style.background = '#fbbf24'; // Yellow
+            else healthBarFill.style.background = 'var(--accent-red)';
+        }
+
+        function gameOver() {
+            screens.game.classList.add('hidden');
+            screens.over.classList.remove('hidden');
+            document.getElementById('final-score').innerHTML = `You successfully navigated <strong style="color:var(--accent-blue)">${score}</strong> epochs.`;
+            document.getElementById('fatal-event').innerText = `The event that ended it all: "${currentEvent.event}" (${formatYear(currentEvent.year)})`;
+        }
+    </script>
+</body>
+</html>
